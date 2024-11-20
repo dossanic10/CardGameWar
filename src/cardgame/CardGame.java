@@ -1,91 +1,126 @@
-package CardGame;
+package cardgame;
 
-import CardGame.Card.Suit;
-import CardGame.Card.Value;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-/**
- * A class to model a card game where the computer
- * generates a hand of cards and the user guesses a card.
- * @author dancye, 2023
- */
 public class CardGame {
-  
-    
-   
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) 
-    {
-       Scanner input = new Scanner(System.in);
-      Card[] hand = CardHandGenerator.generateHand(7);
-       //ask the user for a lucky card
-       System.out.println("Please choose a suit for your lucky card:");
-       for(int i=0; i<Card.Suit.values().length; i++)
-       {
-           System.out.println((i +1) + ": " + Card.Suit.values()[i]);
-       }
-       int suit = input.nextInt()-1;
-       //System.out.println("Enter a value(1 to 13)");
-       int valuePosition = input.nextInt()-1;
-       //create a new Card with the two values Chosen
-       Card userGuess = new Card(Card.Value.values()[valuePosition], Card.Suit.values()[suit]);
-       //check to see if it matches
-       boolean match = false;
-       for(Card card: hand)
-       {
-           if(card.getValue()==userGuess.getValue()&&(card.getSuit().equals(userGuess.getSuit())))
-           {
-               match=true;
-               break;
-           }
-       }
-       System.out.println("Did you guess it?" + match);
+    private Player player;
+    private Player computer;
+    private Deck deck;
+
+    public CardGame() {
+        deck = new Deck();
+        deck.shuffle();
     }
 
-	public int getValue() {
-		return this.value;
-	}
+    public void startGame() {
+        player = new Player("Player");
+        computer = new Player("Computer");
 
-	/**
-	 * 
-	 * @param value
-	 */
-	public void setValue(int value) {
-		this.value = value;
-	}
+        // Ensure deck has 52 cards and is shuffled
+        deck.shuffle();
 
-	public String getSuit() {
-		return this.suit;
-	}
+        // Distribute 26 cards to each player
+        player.addCards(deck.dealHalf());
+        computer.addCards(deck.dealHalf());
+    }
 
-	/**
-	 * 
-	 * @param suit
-	 */
-	public void setSuit(String suit) {
-		this.suit = suit;
-	}
+    public void playRound() {
+        if (!player.hasCards() || !computer.hasCards()) {
+            checkForWinner();
+            return;
+        }
 
-	/**
-	 * 
-	 * @param suit
-	 * @param value
-	 */
-	CardGame(String suit, int value) {
-		// TODO - implement CardGame.CardGame
-		throw new UnsupportedOperationException();
-	}
+        Card playerCard = player.drawCard();
+        Card computerCard = computer.drawCard();
 
-	/**
-	 * @param args the command line arguments
-	 */
-	private int value;
-	private String suit;
+        System.out.println(player.getName() + " plays: " + playerCard);
+        System.out.println(computer.getName() + " plays: " + computerCard);
 
-	
-	
-    
+        if (playerCard.getValue().ordinal() > computerCard.getValue().ordinal()) {
+            System.out.println(player.getName() + " wins the round!");
+            player.addCards(Arrays.asList(playerCard, computerCard));
+        } else if (playerCard.getValue().ordinal() < computerCard.getValue().ordinal()) {
+            System.out.println(computer.getName() + " wins the round!");
+            computer.addCards(Arrays.asList(playerCard, computerCard));
+        } else {
+            initiateWar(new ArrayList<>(Arrays.asList(playerCard, computerCard)));
+        }
+    }
+
+    public void initiateWar(List<Card> cardsInPlay) {
+        System.out.println("War!");
+
+        List<Card> warCards = new ArrayList<>(cardsInPlay);
+
+        for (int i = 0; i < 3; i++) {
+            if (player.hasCards()) {
+                warCards.add(player.drawCard());
+            }
+            if (computer.hasCards()) {
+                warCards.add(computer.drawCard());
+            }
+        }
+
+        Card playerFaceUpCard = player.hasCards() ? player.drawCard() : null;
+        Card computerFaceUpCard = computer.hasCards() ? computer.drawCard() : null;
+
+        if (!player.hasCards() || !computer.hasCards()) {
+            System.out.println("One player has run out of cards! Ending the game.");
+            checkForWinner();
+            return;
+        }
+
+        if (playerFaceUpCard != null) {
+            warCards.add(playerFaceUpCard);
+            System.out.println(player.getName() + " places face-up card: " + playerFaceUpCard);
+        }
+
+        if (computerFaceUpCard != null) {
+            warCards.add(computerFaceUpCard);
+            System.out.println(computer.getName() + " places face-up card: " + computerFaceUpCard);
+        }
+
+        if (playerFaceUpCard.getValue().ordinal() > computerFaceUpCard.getValue().ordinal()) {
+            System.out.println(player.getName() + " wins the war!");
+            player.addCards(warCards);
+        } else if (playerFaceUpCard.getValue().ordinal() < computerFaceUpCard.getValue().ordinal()) {
+            System.out.println(computer.getName() + " wins the war!");
+            computer.addCards(warCards);
+        } else {
+            System.out.println("Another tie! War continues...");
+            initiateWar(warCards);
+        }
+    }
+
+    public void checkForWinner() {
+        if (!player.hasCards()) {
+            System.out.println(computer.getName() + " wins the game!");
+        } else if (!computer.hasCards()) {
+            System.out.println(player.getName() + " wins the game!");
+        }
+    }
+
+    public int getPlayerDeckSize() {
+        return player.getDeckSize();
+    }
+
+    public int getComputerDeckSize() {
+        return computer.getDeckSize();
+    }
+
+    public boolean isGameOver() {
+        return !player.hasCards() || !computer.hasCards();
+    }
+
+    public String getWinner() {
+        if (!player.hasCards()) {
+            return computer.getName();
+        } else if (!computer.hasCards()) {
+            return player.getName();
+        }
+        return "No winner yet";
+    }
 }
+

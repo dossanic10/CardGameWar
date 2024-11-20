@@ -1,5 +1,5 @@
 
-package CardGame;
+package cardgame;
 
 import java.util.Random;
 
